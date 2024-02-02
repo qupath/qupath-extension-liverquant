@@ -3,20 +3,29 @@ package qupath.ext.liverquant.core;
 import org.bytedeco.javacpp.indexer.IntRawIndexer;
 import org.bytedeco.opencv.global.opencv_core;
 import org.bytedeco.opencv.global.opencv_imgproc;
-import org.bytedeco.opencv.opencv_core.Mat;
-import org.bytedeco.opencv.opencv_core.MatVector;
-import org.bytedeco.opencv.opencv_core.Point;
-import org.bytedeco.opencv.opencv_core.Scalar;
+import org.bytedeco.opencv.opencv_core.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import qupath.lib.experimental.pixels.OpenCVProcessor;
 import qupath.lib.experimental.pixels.OutputHandler;
 import qupath.lib.experimental.pixels.Parameters;
 import qupath.lib.geom.Point2;
+import qupath.lib.regions.RegionRequest;
 import qupath.lib.roi.ROIs;
+import qupath.lib.roi.RoiTools;
 import qupath.lib.roi.interfaces.ROI;
+import qupath.opencv.tools.OpenCVTools;
 
 import java.util.List;
+import java.util.Map;
 
 public class FatGlobuleDetector {
+
+    private static final Logger logger = LoggerFactory.getLogger(FatGlobuleDetector.class);
+    private enum Classification {
+        GLOBULE,
+        UNKNOWN
+    }
 
     public static void run(FatGlobulesDetectorParameters fatGlobulesDetectorParameters) {
         OpenCVProcessor.builder(params -> {
@@ -35,25 +44,17 @@ public class FatGlobuleDetector {
                 .mergeSharedBoundaries(fatGlobulesDetectorParameters.getBoundaryThreshold())
                 .outputHandler(OutputHandler.createObjectOutputHandler((Parameters<Mat, Mat> params, Mat output) -> {
                     // Step 1
-                    List<Mat> contours;
+                    List<Mat> contours = List.of();
                     try (Mat mat = output.clone()) {
-                        contours = find_geocontours(mat, params.regionRequest);
+                        contours = findContours(mat, params.getRegionRequest());
                     }
 
+                    Map<Classification, List<Mat>> classifications = filterGlobules(contours, fatGlobulesDetectorParameters);
+                    List<Mat> globules = classifications.get(Classification.GLOBULE);
+                    List<Mat> unknown = classifications.get(Classification.UNKNOWN);
 
-                    def filter = filter_fat_globules(
-                            geocontours,
-                            cal,
-                            minFatGlobuleElongation,
-                            minOverlappingFatGlobuleElongation,
-                            minFatGlobuleSolidity,
-                            minOverlappingFatGlobuleSolidity,
-                            minDiameter,
-                            maxDiameter,
-                            downsample
-                    )
-                    def globules = filter.get(0)
-                    def unknown = filter.get(1)
+
+
 
                     // Step 2
                     Mat mask = Mat.zeros(output.rows(), output.cols(), output.type()).asMat()
@@ -173,6 +174,88 @@ public class FatGlobuleDetector {
                     contours.get(i).close();
                 }
             }
+        }
+    }
+
+    private static List<Mat> findContours(Mat mask, RegionRequest request) {
+        return OpenCVTools.createROIs(mask, request, 1, -1).values().stream()
+                .map(RoiTools::splitROI)
+                .flatMap(List::stream)
+                .map(roi -> {
+                    Mat contour = Mat.zeros(roi.getAllPoints().size(), 1,12).asMat();
+
+                    try (IntRawIndexer indexer = contour.createIndexer()) {
+                        for (int i=0; i<contour.size(0); ++i) {
+                            indexer.put(i, 0, 0, (int) ((roi.getAllPoints().get(i).getX() - request.getX()) / request.getDownsample()));
+                            indexer.put(i, 0, 1, (int) ((roi.getAllPoints().get(i).getY() - request.getY()) / request.getDownsample()));
+                        }
+                    }
+
+                    return contour;
+                })
+                .toList();
+    }
+
+    private static Map<Classification, List<Mat>> filterGlobules(List<Mat> contours, FatGlobulesDetectorParameters fatGlobulesDetectorParameters) {
+        double scale = fatGlobulesDetectorParameters.getImageData().getServer().getPixelCalibration().getAveragedPixelSizeMicrons();
+
+        Map<Classification, List<Mat>> classifications = Map.of(
+                Classification.GLOBULE, List.of(),
+                Classification.UNKNOWN, List.of()
+        );
+
+        for (Mat contour: contours) {
+            try (Point2f center = new Point2f(0, 0)) {
+                float[] radius = new float[] {0};
+                try {
+                    opencv_imgproc.minEnclosingCircle(contour, center, radius);
+                } catch (RuntimeException ignored) {}
+                double diameter = radius[0] * 2 * scale;
+                double elongation = getElongation(contour);
+                double solidity = getSolidity(contour);
+
+                boolean isFatGlobule = elongation > fatGlobulesDetectorParameters.getMinFatGlobuleElongation() &&
+                        solidity > fatGlobulesDetectorParameters.getMinFatGlobuleSolidity() &&
+                        fatGlobulesDetectorParameters.getMinDiameter() < diameter &&
+                        diameter < fatGlobulesDetectorParameters.getMaxDiameter();
+                boolean isUnknown = elongation > fatGlobulesDetectorParameters.getMinOverlappingFatGlobuleElongation() &&
+                        solidity > fatGlobulesDetectorParameters.getMinOverlappingFatGlobuleSolidity() &&
+                        diameter > fatGlobulesDetectorParameters.getMinDiameter();
+
+                if (isFatGlobule) {
+                    classifications.get(Classification.GLOBULE).add(contour);
+                } else if (isUnknown) {
+                    classifications.get(Classification.UNKNOWN).add(contour);
+                } else {
+                    contour.close();
+                }
+            }
+        }
+
+        return classifications;
+    }
+
+    private static double getElongation(Mat mat) {
+        try (Moments moments = opencv_imgproc.moments(mat)) {
+            double x = moments.mu20() + moments.mu02();
+            double y = Math.sqrt(4 * Math.pow(moments.mu11(), 2) + Math.pow(moments.mu20() - moments.mu02(), 2));
+
+            return (x - y) / (x + y);
+        } catch (Exception e) {
+            logger.warn("Error when computing elongation", e);
+            return 0;
+        }
+    }
+
+    private static double getSolidity(Mat mat) {
+        try (Mat hull = new Mat()) {
+            opencv_imgproc.convexHull(mat, hull);
+            double hull_area = opencv_imgproc.contourArea(hull);
+            double area = opencv_imgproc.contourArea(mat);
+            return area / hull_area;
+        } catch (Exception e) {
+            logger.warn("Error when computing solidity", e);
+            return 0;
         }
     }
 }
