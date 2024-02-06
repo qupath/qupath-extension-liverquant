@@ -35,6 +35,7 @@ dependencies {
     // Automatically includes other QuPath jars as subdependencies.
     //shadow "io.github.qupath:qupath-gui-fx:${qupathVersion}"
     shadow "io.github.qupath:qupath-gui-fx:0.5.0"
+    shadow libs.qupath.fxtras
 
     // For logging - the version comes from QuPath's version catalog at
     // https://github.com/qupath/qupath/blob/main/gradle/libs.versions.toml

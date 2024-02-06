@@ -2,11 +2,15 @@ package qupath.ext.liverquant.gui;
 
 import javafx.fxml.FXMLLoader;
 import javafx.stage.Stage;
+import qupath.lib.gui.QuPathGUI;
 
 import java.io.IOException;
 import java.net.URL;
 import java.util.ResourceBundle;
 
+/**
+ * Utility methods related to the user interface.
+ */
 public class UiUtilities {
 
     private static final ResourceBundle resources = ResourceBundle.getBundle("qupath.ext.liverquant.strings");
@@ -49,5 +53,12 @@ public class UiUtilities {
         // that resets the window size
         window.setWidth(window.getWidth() + 1);
         window.setHeight(window.getHeight() + 1);
+    }
+
+    /**
+     * @return whether the graphical user interface is used
+     */
+    public static boolean usingGUI() {
+        return QuPathGUI.getInstance() != null;
     }
 }

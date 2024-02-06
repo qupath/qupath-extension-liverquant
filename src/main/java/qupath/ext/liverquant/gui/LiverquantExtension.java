@@ -4,17 +4,21 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import qupath.lib.common.Version;
 import qupath.lib.gui.QuPathGUI;
-import qupath.lib.gui.actions.ActionTools;
 import qupath.lib.gui.extensions.GitHubProject;
 import qupath.lib.gui.extensions.QuPathExtension;
 import qupath.lib.gui.tools.MenuTools;
 
+import java.util.ResourceBundle;
 
+/**
+ * A QuPath extension to assess Non-alcoholic Fatty Liver Disease (NAFLD).
+ */
 public class LiverquantExtension implements QuPathExtension, GitHubProject {
 	
 	private static final Logger logger = LoggerFactory.getLogger(LiverquantExtension.class);
-	private static final String EXTENSION_NAME = "Liverquant extension";
-	private static final String EXTENSION_DESCRIPTION = "A QuPath extension to assess Non-alcoholic Fatty Liver Disease (NAFLD)";
+	private static final ResourceBundle resources = UiUtilities.getResources();
+	private static final String EXTENSION_NAME = resources.getString("LiverquantExtension.name");
+	private static final String EXTENSION_DESCRIPTION = resources.getString("LiverquantExtension.description");
 	private static final Version EXTENSION_QUPATH_VERSION = Version.parse("v0.5.0");
 	private static final GitHubRepo EXTENSION_REPOSITORY = GitHubRepo.create(EXTENSION_NAME, "qupath", "qupath-extension-liverquant");
 	private boolean isInstalled = false;
@@ -28,13 +32,7 @@ public class LiverquantExtension implements QuPathExtension, GitHubProject {
 
 			MenuTools.addMenuItems(
 					qupath.getMenu("Extensions", false),
-					MenuTools.createMenu(
-							"Liverquant",
-							ActionTools.createAction(
-									new DetectFatGlobulesCommand(qupath.getStage()),
-									"Detect fat globules"
-							)
-					)
+					new DetectFatGlobulesMenu(qupath)
 			);
 		}
 	}

@@ -14,14 +14,14 @@
 <?import javafx.scene.layout.VBox?>
 <?import javafx.stage.Stage?>
 
-<fx:root type="Stage" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1">
+<fx:root type="Stage" xmlns="http://javafx.com/javafx/19" xmlns:fx="http://javafx.com/fxml/1">
     <scene>
         <Scene stylesheets="@../styles.css">
             <VBox spacing="10.0">
             <children>
                <VBox>
                   <children>
-                     <Label styleClass="title" text="Setup parameters" />
+                     <Label styleClass="title" text="%DetectFatGlobulesWindow.setupParameters" />
                      <GridPane hgap="5.0">
                        <columnConstraints>
                          <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" />
@@ -33,21 +33,21 @@
                          <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
                        </rowConstraints>
                         <children>
-                           <Label text="Create" />
-                           <ChoiceBox fx:id="objectsCreated" maxWidth="1.7976931348623157E308" GridPane.columnIndex="1" GridPane.hgrow="ALWAYS" />
-                           <Label text="Requested pixel size" GridPane.rowIndex="1">
+                           <Label text="%DetectFatGlobulesWindow.create" />
+                           <ChoiceBox fx:id="objectsToCreate" maxWidth="1.7976931348623157E308" GridPane.columnIndex="1" GridPane.hgrow="ALWAYS" />
+                           <Label text="%DetectFatGlobulesWindow.requestedPixelSize" GridPane.rowIndex="1">
                               <tooltip>
-                                 <Tooltip text="Choose pixel size at which detection will be performed - higher values are likely to be faster, but may be less accurate; set &lt;=0 to use the full image resolution" />
+                                 <Tooltip text="%DetectFatGlobulesWindow.choosePixelSize" />
                               </tooltip>
                            </Label>
-                           <TextField promptText="Pixel size" text="0.5" GridPane.columnIndex="1" GridPane.rowIndex="1">
+                           <TextField fx:id="pixelSize" promptText="%DetectFatGlobulesWindow.pixelSize" GridPane.columnIndex="1" GridPane.rowIndex="1">
                               <tooltip>
-                                 <Tooltip text="Choose pixel size at which detection will be performed - higher values are likely to be faster, but may be less accurate; set &lt;=0 to use the full image resolution" />
+                                 <Tooltip text="%DetectFatGlobulesWindow.choosePixelSize" />
                               </tooltip>
                            </TextField>
                            <Label text="μm" GridPane.columnIndex="2" GridPane.rowIndex="1">
                               <tooltip>
-                                 <Tooltip text="Choose pixel size at which detection will be performed - higher values are likely to be faster, but may be less accurate; set &lt;=0 to use the full image resolution" />
+                                 <Tooltip text="%DetectFatGlobulesWindow.choosePixelSize" />
                               </tooltip>
                            </Label>
                         </children>
@@ -59,7 +59,7 @@
                </VBox>
                <VBox>
                   <children>
-                     <Label styleClass="title" text="Color segmentation parameters" />
+                     <Label styleClass="title" text="%DetectFatGlobulesWindow.colorSegmentationParameters" />
                      <GridPane hgap="5.0">
                        <columnConstraints>
                          <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" />
@@ -70,20 +70,20 @@
                          <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
                        </rowConstraints>
                         <children>
-                           <Label text="Upper bound" GridPane.rowIndex="1" />
-                           <Label text="Lower bound" />
-                           <HBox GridPane.columnIndex="1" GridPane.rowIndex="1">
-                              <children>
-                                 <TextField text="180" />
-                                 <TextField text="25" />
-                                 <TextField text="255" />
-                              </children>
-                           </HBox>
+                           <Label text="%DetectFatGlobulesWindow.lowerBound" />
                            <HBox GridPane.columnIndex="1">
                               <children>
-                                 <TextField text="0" />
-                                 <TextField text="0" />
-                                 <TextField text="200" />
+                                 <TextField fx:id="lowerHue" promptText="%DetectFatGlobulesWindow.hue" />
+                                 <TextField fx:id="lowerSaturation" promptText="%DetectFatGlobulesWindow.sat" />
+                                 <TextField fx:id="lowerValue" promptText="%DetectFatGlobulesWindow.val" />
+                              </children>
+                           </HBox>
+                           <Label text="%DetectFatGlobulesWindow.upperBound" GridPane.rowIndex="1" />
+                           <HBox GridPane.columnIndex="1" GridPane.rowIndex="1">
+                              <children>
+                                 <TextField fx:id="upperHue" promptText="%DetectFatGlobulesWindow.hue" />
+                                 <TextField fx:id="upperSaturation" promptText="%DetectFatGlobulesWindow.sat" />
+                                 <TextField fx:id="upperValue" promptText="%DetectFatGlobulesWindow.val" />
                               </children>
                            </HBox>
                         </children>
@@ -95,7 +95,7 @@
                </VBox>
                <VBox>
                   <children>
-                     <Label styleClass="title" text="Filter parameters" />
+                     <Label styleClass="title" text="%DetectFatGlobulesWindow.filterParameters" />
                      <GridPane hgap="5.0">
                        <columnConstraints>
                          <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" />
@@ -111,23 +111,19 @@
                            <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
                        </rowConstraints>
                         <children>
-                           <TextField text="0.85" GridPane.columnIndex="1" GridPane.rowIndex="2" />
-                           <Label text="Min fat globule solidity" GridPane.rowIndex="2" />
-                           <Label text="Min overlapping fat globule elongation" GridPane.rowIndex="1" />
-                           <TextField text="0.05" GridPane.columnIndex="1" GridPane.rowIndex="1" />
-                           <TextField text="0.4" GridPane.columnIndex="1" />
-                           <Label text="Min fat globule elongation" />
-                           <Label text="Min overlapping fat globule solidity" GridPane.rowIndex="3" />
-                           <HBox GridPane.columnIndex="1" GridPane.rowIndex="3">
-                              <children>
-                                 <TextField text="0.7" />
-                              </children>
-                           </HBox>
-                           <Label text="Min diameter" GridPane.rowIndex="4" />
-                           <TextField text="5" GridPane.columnIndex="1" GridPane.rowIndex="4" />
+                           <Label text="%DetectFatGlobulesWindow.minIsolatedGlobuleElongation" />
+                           <TextField fx:id="minIsolatedGlobuleElongation" promptText="%DetectFatGlobulesWindow.elongation" GridPane.columnIndex="1" />
+                           <Label text="%DetectFatGlobulesWindow.minOverlappingGlobuleElongation" GridPane.rowIndex="1" />
+                           <TextField fx:id="minOverlappingGlobuleElongation" promptText="%DetectFatGlobulesWindow.elongation" GridPane.columnIndex="1" GridPane.rowIndex="1" />
+                           <Label text="%DetectFatGlobulesWindow.minIsolatedGlobuleSolidity" GridPane.rowIndex="2" />
+                           <TextField fx:id="minIsolatedGlobuleSolidity" promptText="%DetectFatGlobulesWindow.solidity" GridPane.columnIndex="1" GridPane.rowIndex="2" />
+                           <Label text="%DetectFatGlobulesWindow.minOverlappingGlobuleSolidity" GridPane.rowIndex="3" />
+                           <TextField fx:id="minOverlappingGlobuleSolidity" promptText="%DetectFatGlobulesWindow.solidity" GridPane.columnIndex="1" GridPane.rowIndex="3" />
+                           <Label text="%DetectFatGlobulesWindow.minDiameter" GridPane.rowIndex="4" />
+                           <TextField fx:id="minDiameter" promptText="%DetectFatGlobulesWindow.diameter" GridPane.columnIndex="1" GridPane.rowIndex="4" />
                            <Label text="μm" GridPane.columnIndex="2" GridPane.rowIndex="4" />
-                           <Label text="Max diameter" GridPane.rowIndex="5" />
-                           <TextField text="100" GridPane.columnIndex="1" GridPane.rowIndex="5" />
+                           <Label text="%DetectFatGlobulesWindow.maxDiameter" GridPane.rowIndex="5" />
+                           <TextField fx:id="maxDiameter" promptText="%DetectFatGlobulesWindow.diameter" GridPane.columnIndex="1" GridPane.rowIndex="5" />
                            <Label text="μm" GridPane.columnIndex="2" GridPane.rowIndex="5" />
                         </children>
                         <VBox.margin>
@@ -138,7 +134,7 @@
                </VBox>
                <VBox>
                   <children>
-                     <Label styleClass="title" text="Tile parameters" />
+                     <Label styleClass="title" text="%DetectFatGlobulesWindow.tileParameters" />
                      <GridPane hgap="5.0">
                        <columnConstraints>
                          <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" />
@@ -152,17 +148,17 @@
                            <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
                        </rowConstraints>
                         <children>
-                           <Label text="Tile width" />
-                           <TextField text="512" GridPane.columnIndex="1" />
-                           <Label text="pixels" GridPane.columnIndex="2" />
-                           <Label text="pixels" GridPane.columnIndex="2" GridPane.rowIndex="1" />
-                           <Label text="pixels" GridPane.columnIndex="2" GridPane.rowIndex="2" />
-                           <TextField text="512" GridPane.columnIndex="1" GridPane.rowIndex="1" />
-                           <Label text="Tile height" GridPane.rowIndex="1" />
-                           <Label text="Padding" GridPane.rowIndex="2" />
-                           <TextField text="64" GridPane.columnIndex="1" GridPane.rowIndex="2" />
-                           <Label text="Boundary threshold" GridPane.rowIndex="3" />
-                           <TextField text="0.5" GridPane.columnIndex="1" GridPane.rowIndex="3" />
+                           <Label text="%DetectFatGlobulesWindow.tileWidth" />
+                           <TextField fx:id="tileWidth" promptText="%DetectFatGlobulesWindow.tileWidth" GridPane.columnIndex="1" />
+                           <Label text="%DetectFatGlobulesWindow.pixels" GridPane.columnIndex="2" />
+                           <Label text="%DetectFatGlobulesWindow.tileHeight" GridPane.rowIndex="1" />
+                           <TextField fx:id="tileHeight" promptText="%DetectFatGlobulesWindow.tileHeight" GridPane.columnIndex="1" GridPane.rowIndex="1" />
+                           <Label text="%DetectFatGlobulesWindow.pixels" GridPane.columnIndex="2" GridPane.rowIndex="1" />
+                           <Label text="%DetectFatGlobulesWindow.padding" GridPane.rowIndex="2" />
+                           <TextField fx:id="padding" promptText="%DetectFatGlobulesWindow.padding" GridPane.columnIndex="1" GridPane.rowIndex="2" />
+                           <Label text="%DetectFatGlobulesWindow.pixels" GridPane.columnIndex="2" GridPane.rowIndex="2" />
+                           <Label text="%DetectFatGlobulesWindow.boundaryThreshold" GridPane.rowIndex="3" />
+                           <TextField fx:id="boundaryThreshold" promptText="%DetectFatGlobulesWindow.threshold" GridPane.columnIndex="1" GridPane.rowIndex="3" />
                         </children>
                         <VBox.margin>
                            <Insets left="5.0" right="5.0" />
@@ -170,7 +166,7 @@
                      </GridPane>
                   </children>
                </VBox>
-               <Button maxWidth="1.7976931348623157E308" mnemonicParsing="false" text="Run" />
+               <Button fx:id="run" maxWidth="1.7976931348623157E308" mnemonicParsing="false" onAction="#run" text="%DetectFatGlobulesWindow.run" />
             </children>
             <padding>
                <Insets bottom="5.0" left="5.0" right="5.0" top="5.0" />

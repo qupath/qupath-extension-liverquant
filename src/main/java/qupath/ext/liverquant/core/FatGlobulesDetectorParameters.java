@@ -1,278 +1,443 @@
 package qupath.ext.liverquant.core;
 
+import qupath.ext.liverquant.gui.UiUtilities;
 import qupath.lib.images.ImageData;
 import qupath.lib.objects.PathObject;
 
+import java.awt.image.BufferedImage;
 import java.util.Collection;
 
+/**
+ * <p>
+ *     Parameters to start a {@link FatGlobuleDetector}.
+ * </p>
+ * <p>
+ *     Use the {@link Builder} to create an instance of this object.
+ * </p>
+ */
 public class FatGlobulesDetectorParameters {
 
-    private final ImageData<?> imageData;
+    private final ImageData<BufferedImage> imageData;
     private final Collection<PathObject> annotations;
-    private final ObjectCreated objectCreated;
+    private final ProgressDisplay progressDisplay;
+    private final ObjectToCreate objectToCreate;
     private final float pixelSize;
-    private final int lowerBoundHue;
-    private final int lowerBoundSaturation;
-    private final int lowerBoundValue;
-    private final int upperBoundHue;
-    private final int upperBoundSaturation;
-    private final int upperBoundValue;
-    private final float minFatGlobuleElongation;
-    private final float minOverlappingFatGlobuleElongation;
-    private final float minFatGlobuleSolidity;
-    private final float minOverlappingFatGlobuleSolidity;
+    private final HsvArray lowerBound;
+    private final HsvArray upperBound;
+    private final float minIsolatedGlobuleElongation;
+    private final float minOverlappingGlobuleElongation;
+    private final float minIsolatedGlobuleSolidity;
+    private final float minOverlappingGlobuleSolidity;
     private final float minDiameter;
     private final float maxDiameter;
     private final int tileWidth;
     private final int tileHeight;
     private final int padding;
     private final float boundaryThreshold;
-    public enum ObjectCreated {
+    private final Runnable onFinished;
+    /**
+     * Define the type of object to create to represent a globule
+     */
+    public enum ObjectToCreate {
         ANNOTATION,
         DETECTION
+    }
+    /**
+     * Define how to display the progress of the algorithm
+     */
+    public enum ProgressDisplay {
+        WINDOW,
+        LOG
     }
 
     private FatGlobulesDetectorParameters(Builder builder) {
         this.imageData = builder.imageData;
         this.annotations = builder.annotations;
-        this.objectCreated = builder.objectCreated;
+        this.progressDisplay = builder.progressDisplay;
+        this.objectToCreate = builder.objectToCreate;
         this.pixelSize = builder.pixelSize;
-        this.lowerBoundHue = builder.lowerBoundHue;
-        this.lowerBoundSaturation = builder.lowerBoundSaturation;
-        this.lowerBoundValue = builder.lowerBoundValue;
-        this.upperBoundHue = builder.upperBoundHue;
-        this.upperBoundSaturation = builder.upperBoundSaturation;
-        this.upperBoundValue = builder.upperBoundValue;
-        this.minFatGlobuleElongation = builder.minFatGlobuleElongation;
-        this.minOverlappingFatGlobuleElongation = builder.minOverlappingFatGlobuleElongation;
-        this.minFatGlobuleSolidity = builder.minFatGlobuleSolidity;
-        this.minOverlappingFatGlobuleSolidity = builder.minOverlappingFatGlobuleSolidity;
+        this.lowerBound = builder.lowerBound;
+        this.upperBound = builder.upperBound;
+        this.minIsolatedGlobuleElongation = builder.minIsolatedGlobuleElongation;
+        this.minOverlappingGlobuleElongation = builder.minOverlappingGlobuleElongation;
+        this.minIsolatedGlobuleSolidity = builder.minIsolatedGlobuleSolidity;
+        this.minOverlappingGlobuleSolidity = builder.minOverlappingGlobuleSolidity;
         this.minDiameter = builder.minDiameter;
         this.maxDiameter = builder.maxDiameter;
         this.tileWidth = builder.tileWidth;
         this.tileHeight = builder.tileHeight;
         this.padding = builder.padding;
         this.boundaryThreshold = builder.boundaryThreshold;
+        this.onFinished = builder.onFinished;
     }
 
-    public ImageData<?> getImageData() {
+    /**
+     * @return the ImageData representing the image to use the algorithm on
+     */
+    public ImageData<BufferedImage> getImageData() {
         return imageData;
     }
 
+    /**
+     * @return the annotations that define the areas where the detection should take place
+     */
     public Collection<PathObject> getAnnotations() {
         return annotations;
     }
 
-    public ObjectCreated getObjectCreated() {
-        return objectCreated;
+    /**
+     * @return the method to use to monitor progress
+     */
+    public ProgressDisplay getProgressDisplay() {
+        return progressDisplay;
     }
 
+    /**
+     * @return the type of object to create when representing a globule
+     */
+    public ObjectToCreate getObjectToCreate() {
+        return objectToCreate;
+    }
+
+    /**
+     * @return the pixel size at which detection should be performed
+     */
     public float getPixelSize() {
         return pixelSize;
     }
 
-    public int getLowerBoundHue() {
-        return lowerBoundHue;
+    /**
+     * @return the inclusive lower bound array in HSV-space that should be used for color segmentation
+     */
+    public HsvArray getLowerBound() {
+        return lowerBound;
     }
 
-    public int getLowerBoundSaturation() {
-        return lowerBoundSaturation;
+    /**
+     * @return the inclusive upper bound array in HSV-space that should be used for color segmentation
+     */
+    public HsvArray getUpperBound() {
+        return upperBound;
     }
 
-    public int getLowerBoundValue() {
-        return lowerBoundValue;
+    /**
+     * @return the minimal elongation a shape should have to be considered as an isolated globule
+     */
+    public float getMinIsolatedGlobuleElongation() {
+        return minIsolatedGlobuleElongation;
     }
 
-    public int getUpperBoundHue() {
-        return upperBoundHue;
+    /**
+     * @return the minimal elongation a shape should have to be considered as an overlapping globule
+     */
+    public float getMinOverlappingGlobuleElongation() {
+        return minOverlappingGlobuleElongation;
     }
 
-    public int getUpperBoundSaturation() {
-        return upperBoundSaturation;
+    /**
+     * @return the minimal solidity a shape should have to be considered as an isolated globule
+     */
+    public float getMinIsolatedGlobuleSolidity() {
+        return minIsolatedGlobuleSolidity;
     }
 
-    public int getUpperBoundValue() {
-        return upperBoundValue;
+    /**
+     * @return the minimal solidity a shape should have to be considered as an overlapping globule
+     */
+    public float getMinOverlappingGlobuleSolidity() {
+        return minOverlappingGlobuleSolidity;
     }
 
-    public float getMinFatGlobuleElongation() {
-        return minFatGlobuleElongation;
-    }
-
-    public float getMinOverlappingFatGlobuleElongation() {
-        return minOverlappingFatGlobuleElongation;
-    }
-
-    public float getMinFatGlobuleSolidity() {
-        return minFatGlobuleSolidity;
-    }
-
-    public float getMinOverlappingFatGlobuleSolidity() {
-        return minOverlappingFatGlobuleSolidity;
-    }
-
+    /**
+     * @return the minimal diameter (in microns) a shape should have to be considered as a globule
+     */
     public float getMinDiameter() {
         return minDiameter;
     }
 
+    /**
+     * @return the maximal diameter (in microns) a shape should have to be considered as an isolated globule
+     */
     public float getMaxDiameter() {
         return maxDiameter;
     }
 
+    /**
+     * @return the width of each tile at which the detection should be performed
+     */
     public int getTileWidth() {
         return tileWidth;
     }
 
+    /**
+     * @return the height of each tile at which the detection should be performed
+     */
     public int getTileHeight() {
         return tileHeight;
     }
 
+    /**
+     * @return the padding of each tile at which the detection should be performed
+     */
     public int getPadding() {
         return padding;
     }
 
+    /**
+     * Objects created on the boundaries of tiles are merged with a shared boundary IoU criterion.
+     * The value returned by this function is the minimum intersection-over-union (IoU) proportion
+     * of the possibly-clipped boundary for merging (see {@link qupath.lib.objects.utils.ObjectMerger#createSharedTileBoundaryMerger(double)}
+     *
+     * @return the minimum intersection-over-union (IoU) proportion of the possibly-clipped boundary for merging
+     */
     public float getBoundaryThreshold() {
         return boundaryThreshold;
     }
 
+    /**
+     * @return an operation to be run after the detection is complete
+     */
+    public Runnable getOnFinished() {
+        return onFinished;
+    }
+
+    public record HsvArray(int hue, int saturation, int value) {
+
+        /**
+         * Define a pixel value in the HSV-space.
+         *
+         * @param hue  the hue of the pixel, between 0 and 180
+         * @param saturation  the saturation of the pixel, between 0 and 255
+         * @param value  the value of the pixel, between 0 and 255
+         * @throws IllegalArgumentException if one of the value is not in the correct range
+         */
+        public HsvArray {
+            if (hue < 0 || hue > 180) {
+                throw new IllegalArgumentException(String.format("The supplied hue (%d) is not within the required range ([0, 180])", hue));
+            }
+            if (saturation < 0 || saturation > 255) {
+                throw new IllegalArgumentException(String.format("The supplied saturation (%d) is not within the required range ([0, 255])", saturation));
+            }
+            if (value < 0 || value > 255) {
+                throw new IllegalArgumentException(String.format("The supplied value (%d) is not within the required range ([0, 255])", value));
+            }
+        }
+    }
+
+    /**
+     * Create an instance of {@link FatGlobulesDetectorParameters}.
+     */
     public static class Builder {
 
-        private final ImageData<?> imageData;
+        private final ImageData<BufferedImage> imageData;
         private final Collection<PathObject> annotations;
-        private ObjectCreated objectCreated = ObjectCreated.DETECTION;
+        private ProgressDisplay progressDisplay = UiUtilities.usingGUI() ? ProgressDisplay.WINDOW : ProgressDisplay.LOG;
+        private ObjectToCreate objectToCreate = ObjectToCreate.DETECTION;
         private float pixelSize = 0.5f;
-        private int lowerBoundHue = 0;
-        private int lowerBoundSaturation = 0;
-        private int lowerBoundValue = 200;
-        private int upperBoundHue = 180;
-        private int upperBoundSaturation = 25;
-        private int upperBoundValue = 255;
-        private float minFatGlobuleElongation = 0.4f;
-        private float minOverlappingFatGlobuleElongation = 0.05f;
-        private float minFatGlobuleSolidity = 0.85f;
-        private float minOverlappingFatGlobuleSolidity = 0.7f;
+        private HsvArray lowerBound = new HsvArray(0, 0, 200);
+        private HsvArray upperBound = new HsvArray(180, 25, 255);
+        private float minIsolatedGlobuleElongation = 0.4f;
+        private float minOverlappingGlobuleElongation = 0.05f;
+        private float minIsolatedGlobuleSolidity = 0.85f;
+        private float minOverlappingGlobuleSolidity = 0.7f;
         private float minDiameter = 5;
         private float maxDiameter = 100;
         private int tileWidth = 512;
         private int tileHeight = 512;
         private int padding = 64;
         private float boundaryThreshold = 0.5f;
+        private Runnable onFinished = () -> {};
 
-        public Builder(ImageData<?> imageData, Collection<PathObject> annotations) {
+        /**
+         * Create the builder.
+         *
+         * @param imageData  the ImageData representing the image to use the algorithm on
+         * @param annotations  the annotations that define the areas where the detection should take place
+         */
+        public Builder(ImageData<BufferedImage> imageData, Collection<PathObject> annotations) {
             this.imageData = imageData;
             this.annotations = annotations;
         }
 
-        public void setObjectCreated(ObjectCreated objectCreated) {
-            this.objectCreated = objectCreated;
+        /**
+         * @param progressDisplay  the method to use to monitor progress
+         * @return this builder
+         */
+        public Builder setProgressDisplay(ProgressDisplay progressDisplay) {
+            this.progressDisplay = progressDisplay;
+            return this;
         }
 
-        public void setPixelSize(float pixelSize) {
+        /**
+         * @param objectToCreate  the type of object to create when representing a globule
+         * @return this builder
+         */
+        public Builder setObjectToCreate(ObjectToCreate objectToCreate) {
+            this.objectToCreate = objectToCreate;
+            return this;
+        }
+
+        /**
+         * @param pixelSize  the pixel size at which detection should be performed
+         * @return this builder
+         */
+        public Builder setPixelSize(float pixelSize) {
             this.pixelSize = pixelSize;
+            return this;
         }
 
-        public void setLowerBoundHue(int lowerBoundHue) {
-            if (lowerBoundHue < 0 || lowerBoundHue > 179) {
-                throw new IllegalArgumentException(String.format("The supplied hue (%d) is not within the required range ([0, 179])", lowerBoundHue));
-            }
-
-            this.lowerBoundHue = lowerBoundHue;
+        /**
+         * @param lowerBound  the inclusive lower bound array in HSV-space that should be used for color segmentation
+         * @return this builder
+         */
+        public Builder setLowerBound(HsvArray lowerBound) {
+            this.lowerBound = lowerBound;
+            return this;
         }
 
-        public void setLowerBoundSaturation(int lowerBoundSaturation) {
-            if (lowerBoundSaturation < 0 || lowerBoundSaturation > 255) {
-                throw new IllegalArgumentException(String.format("The supplied saturation (%d) is not within the required range ([0, 255])", lowerBoundSaturation));
-            }
-
-            this.lowerBoundSaturation = lowerBoundSaturation;
+        /**
+         * @param upperBound  the inclusive upper bound array in HSV-space that should be used for color segmentation
+         * @return this builder
+         */
+        public Builder setUpperBound(HsvArray upperBound) {
+            this.upperBound = upperBound;
+            return this;
         }
 
-        public void setLowerBoundValue(int lowerBoundValue) {
-            if (lowerBoundValue < 0 || lowerBoundValue > 255) {
-                throw new IllegalArgumentException(String.format("The supplied value (%d) is not within the required range ([0, 255])", lowerBoundValue));
-            }
-
-            this.lowerBoundValue = lowerBoundValue;
+        /**
+         * @param minIsolatedGlobuleElongation  the minimal elongation a shape should have to be considered as an isolated globule
+         * @return this builder
+         */
+        public Builder setMinIsolatedGlobuleElongation(float minIsolatedGlobuleElongation) {
+            this.minIsolatedGlobuleElongation = minIsolatedGlobuleElongation;
+            return this;
         }
 
-        public void setUpperBoundHue(int upperBoundHue) {
-            if (upperBoundHue < 0 || upperBoundHue > 179) {
-                throw new IllegalArgumentException(String.format("The supplied hue (%d) is not within the required range ([0, 179])", upperBoundHue));
-            }
-
-            this.upperBoundHue = upperBoundHue;
+        /**
+         * @param minOverlappingGlobuleElongation  the minimal elongation a shape should have to be considered as an overlapping globule
+         * @return this builder
+         */
+        public Builder setMinOverlappingGlobuleElongation(float minOverlappingGlobuleElongation) {
+            this.minOverlappingGlobuleElongation = minOverlappingGlobuleElongation;
+            return this;
         }
 
-        public void setUpperBoundSaturation(int upperBoundSaturation) {
-            if (upperBoundSaturation < 0 || upperBoundSaturation > 255) {
-                throw new IllegalArgumentException(String.format("The supplied saturation (%d) is not within the required range ([0, 255])", upperBoundSaturation));
-            }
-
-            this.upperBoundSaturation = upperBoundSaturation;
+        /**
+         * @param minIsolatedGlobuleSolidity  the minimal solidity a shape should have to be considered as an isolated globule
+         * @return this builder
+         */
+        public Builder setMinIsolatedGlobuleSolidity(float minIsolatedGlobuleSolidity) {
+            this.minIsolatedGlobuleSolidity = minIsolatedGlobuleSolidity;
+            return this;
         }
 
-        public void setUpperBoundValue(int upperBoundValue) {
-            if (upperBoundValue < 0 || upperBoundValue > 255) {
-                throw new IllegalArgumentException(String.format("The supplied value (%d) is not within the required range ([0, 255])", upperBoundValue));
-            }
-
-            this.upperBoundValue = upperBoundValue;
+        /**
+         * @param minOverlappingGlobuleSolidity  the minimal solidity a shape should have to be considered as an overlapping globule
+         * @return this builder
+         */
+        public Builder setMinOverlappingGlobuleSolidity(float minOverlappingGlobuleSolidity) {
+            this.minOverlappingGlobuleSolidity = minOverlappingGlobuleSolidity;
+            return this;
         }
 
-        public void setMinFatGlobuleElongation(float minFatGlobuleElongation) {
-            this.minFatGlobuleElongation = minFatGlobuleElongation;
-        }
-
-        public void setMinOverlappingFatGlobuleElongation(float minOverlappingFatGlobuleElongation) {
-            this.minOverlappingFatGlobuleElongation = minOverlappingFatGlobuleElongation;
-        }
-
-        public void setMinFatGlobuleSolidity(float minFatGlobuleSolidity) {
-            this.minFatGlobuleSolidity = minFatGlobuleSolidity;
-        }
-
-        public void setMinOverlappingFatGlobuleSolidity(float minOverlappingFatGlobuleSolidity) {
-            this.minOverlappingFatGlobuleSolidity = minOverlappingFatGlobuleSolidity;
-        }
-
-        public void setMinDiameter(float minDiameter) {
+        /**
+         * @param minDiameter  the minimal diameter (in microns) a shape should have to be considered as a globule
+         * @return this builder
+         */
+        public Builder setMinDiameter(float minDiameter) {
             this.minDiameter = minDiameter;
+            return this;
         }
 
-        public void setMaxDiameter(float maxDiameter) {
+        /**
+         * @param maxDiameter  the maximal diameter (in microns) a shape should have to be considered as an isolated globule
+         * @return this builder
+         */
+        public Builder setMaxDiameter(float maxDiameter) {
             this.maxDiameter = maxDiameter;
+            return this;
         }
 
-        public void setTileWidth(int tileWidth) {
+        /**
+         * @param tileWidth  the width of each tile (in pixels) at which the detection should be performed
+         * @return this builder
+         * @throws IllegalArgumentException if the tile width is negative
+         */
+        public Builder setTileWidth(int tileWidth) {
             if (tileWidth < 0) {
                 throw new IllegalArgumentException(String.format("The supplied tile width (%d) is less than 0", tileWidth));
             }
 
             this.tileWidth = tileWidth;
+            return this;
         }
 
-        public void setTileHeight(int tileHeight) {
+        /**
+         * @param tileHeight  the height of each tile (in pixel) at which the detection should be performed
+         * @return this builder
+         * @throws IllegalArgumentException if the tile height is negative
+         */
+        public Builder setTileHeight(int tileHeight) {
             if (tileHeight < 0) {
                 throw new IllegalArgumentException(String.format("The supplied tile height (%d) is less than 0", tileHeight));
             }
 
             this.tileHeight = tileHeight;
+            return this;
         }
 
-        public void setPadding(int padding) {
+        /**
+         * @param padding  the padding (in pixels) of each tile at which the detection should be performed
+         * @return this builder
+         * @throws IllegalArgumentException if the padding is negative
+         */
+        public Builder setPadding(int padding) {
             if (padding < 0) {
                 throw new IllegalArgumentException(String.format("The supplied padding (%d) is less than 0", padding));
             }
 
             this.padding = padding;
+            return this;
         }
 
-        public void setBoundaryThreshold(float boundaryThreshold) {
-            if (boundaryThreshold < 0 || boundaryThreshold > 0) {
+        /**
+         * Objects created on the boundaries of tiles are merged with a shared boundary IoU criterion.
+         * The value passed to this function is the minimum intersection-over-union (IoU) proportion
+         * of the possibly-clipped boundary for merging (see {@link qupath.lib.objects.utils.ObjectMerger#createSharedTileBoundaryMerger(double)}
+         *
+         * @param boundaryThreshold  the minimum intersection-over-union (IoU) proportion of the possibly-clipped boundary for merging
+         *                           (between 0 and 1)
+         * @return this builder
+         * @throws IllegalArgumentException if the threshold is not between 0 and 1
+         */
+        public Builder setBoundaryThreshold(float boundaryThreshold) {
+            if (boundaryThreshold < 0 || boundaryThreshold > 1) {
                 throw new IllegalArgumentException(String.format("The supplied boundary threshold (%f) is not within the required range ([0, 1])", boundaryThreshold));
             }
 
             this.boundaryThreshold = boundaryThreshold;
+            return this;
+        }
+
+        /**
+         * Set an operation to be run after the detection is complete.
+         * This may be executed on any thread.
+         *
+         * @param onFinished  the operation to run after the detection
+         * @return this builder
+         */
+        public Builder setOnFinished(Runnable onFinished) {
+            this.onFinished = onFinished;
+            return this;
+        }
+
+        /**
+         * Build the {@link FatGlobulesDetectorParameters} instance.
+         *
+         * @return a new instance of {@link FatGlobulesDetectorParameters} with the defined parameters
+         */
+        public FatGlobulesDetectorParameters build() {
+            return new FatGlobulesDetectorParameters(this);
         }
     }
 }
