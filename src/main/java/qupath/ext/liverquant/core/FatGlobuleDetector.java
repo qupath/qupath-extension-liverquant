@@ -6,6 +6,7 @@ import org.bytedeco.javacpp.indexer.IntRawIndexer;
 import org.bytedeco.opencv.global.opencv_core;
 import org.bytedeco.opencv.global.opencv_imgproc;
 import org.bytedeco.opencv.opencv_core.Mat;
+import org.bytedeco.opencv.opencv_core.MatExpr;
 import org.bytedeco.opencv.opencv_core.Scalar;
 import org.bytedeco.opencv.opencv_core.MatVector;
 import org.bytedeco.opencv.opencv_core.Point;
@@ -49,6 +50,10 @@ public class FatGlobuleDetector {
     private enum GlobuleClassification {
         ISOLATED_GLOBULE,
         OVERLAPPING_GLOBULE
+    }
+
+    private FatGlobuleDetector() {
+        throw new AssertionError("This class is not instantiable.");
     }
 
     /**
@@ -220,7 +225,10 @@ public class FatGlobuleDetector {
      * @return a list of contours (as defined by OpenCV) of separated globules
      */
     private static List<Mat> separateOverlappingGlobules(List<Mat> overlappingGlobules, int numberOfRows, int numberOfColumns) {
-        try (Mat mask = new Mat(numberOfRows, numberOfColumns, opencv_core.CV_8U)) {
+        try (
+                MatExpr maskExpr = Mat.zeros(numberOfRows, numberOfColumns, opencv_core.CV_8U);
+                Mat mask = maskExpr.asMat()
+        ) {
             drawContours(mask, overlappingGlobules);
 
             return separateObjects(mask);
@@ -373,7 +381,8 @@ public class FatGlobuleDetector {
      */
     private static void drawContours(Mat mask, List<Mat> contours) {
         try (
-                Mat upSampledMask = new Mat(mask.rows()*2, mask.cols()*2, mask.type());
+                MatExpr upSampledMaskEpr = Mat.zeros(mask.rows()*2, mask.cols()*2, mask.type());
+                Mat upSampledMask = upSampledMaskEpr.asMat();
                 Size size = new Size(mask.cols(), mask.rows());
                 Size upSampledSize = new Size(mask.cols()*2, mask.rows()*2)
         ) {
