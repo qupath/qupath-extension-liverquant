@@ -1,6 +1,5 @@
 package qupath.ext.liverquant.core;
 
-import javafx.application.Platform;
 import org.bytedeco.javacpp.indexer.Index;
 import org.bytedeco.javacpp.indexer.Indexer;
 import org.bytedeco.javacpp.indexer.IntRawIndexer;
@@ -24,12 +23,10 @@ import qupath.lib.gui.QuPathGUI;
 import qupath.lib.gui.TaskRunnerFX;
 import qupath.lib.objects.PathObject;
 import qupath.lib.objects.PathObjects;
-import qupath.lib.objects.hierarchy.PathObjectHierarchy;
 import qupath.lib.plugins.CommandLineTaskRunner;
 import qupath.lib.regions.RegionRequest;
 import qupath.lib.roi.ROIs;
 import qupath.lib.roi.RoiTools;
-import qupath.lib.roi.interfaces.ROI;
 import qupath.opencv.tools.OpenCVTools;
 import qupath.opencv.tools.ProcessingCV;
 
@@ -74,7 +71,8 @@ public class FatGlobuleDetector {
                     return mat;
                 })
                 .downsample(
-                        fatGlobulesDetectorParameters.getPixelSize() / fatGlobulesDetectorParameters.getImageData().getServer().getPixelCalibration().getAveragedPixelSizeMicrons()
+                        fatGlobulesDetectorParameters.getPixelSize() <= 0 ? 1 :
+                                fatGlobulesDetectorParameters.getPixelSize() / fatGlobulesDetectorParameters.getImageData().getServer().getPixelCalibration().getAveragedPixelSizeMicrons()
                 )
                 .tile(fatGlobulesDetectorParameters.getTileWidth(), fatGlobulesDetectorParameters.getTileHeight())
                 .padding(fatGlobulesDetectorParameters.getPadding())

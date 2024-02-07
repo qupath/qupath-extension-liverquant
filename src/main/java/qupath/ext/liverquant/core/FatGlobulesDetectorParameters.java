@@ -100,7 +100,8 @@ public class FatGlobulesDetectorParameters {
     }
 
     /**
-     * @return the pixel size at which detection should be performed
+     * @return the pixel size in microns at which detection should be performed. If the value is negative
+     * or equal to 0, the full resolution image should be used.
      */
     public float getPixelSize() {
         return pixelSize;
@@ -233,7 +234,7 @@ public class FatGlobulesDetectorParameters {
         private final Collection<PathObject> annotations;
         private ProgressDisplay progressDisplay = UiUtilities.usingGUI() ? ProgressDisplay.WINDOW : ProgressDisplay.LOG;
         private ObjectToCreate objectToCreate = ObjectToCreate.DETECTION;
-        private float pixelSize = 0.5f;
+        private float pixelSize = -1f;
         private HsvArray lowerBound = new HsvArray(0, 0, 200);
         private HsvArray upperBound = new HsvArray(180, 25, 255);
         private float minIsolatedGlobuleElongation = 0.4f;
@@ -278,7 +279,8 @@ public class FatGlobulesDetectorParameters {
         }
 
         /**
-         * @param pixelSize  the pixel size at which detection should be performed
+         * @param pixelSize  the pixel size in microns at which detection should be performed. Write a value <=0
+         *                   if the full resolution image should be used.
          * @return this builder
          */
         public Builder setPixelSize(float pixelSize) {
@@ -406,15 +408,9 @@ public class FatGlobulesDetectorParameters {
          * of the possibly-clipped boundary for merging (see {@link qupath.lib.objects.utils.ObjectMerger#createSharedTileBoundaryMerger(double)}
          *
          * @param boundaryThreshold  the minimum intersection-over-union (IoU) proportion of the possibly-clipped boundary for merging
-         *                           (between 0 and 1)
          * @return this builder
-         * @throws IllegalArgumentException if the threshold is not between 0 and 1
          */
         public Builder setBoundaryThreshold(float boundaryThreshold) {
-            if (boundaryThreshold < 0 || boundaryThreshold > 1) {
-                throw new IllegalArgumentException(String.format("The supplied boundary threshold (%f) is not within the required range ([0, 1])", boundaryThreshold));
-            }
-
             this.boundaryThreshold = boundaryThreshold;
             return this;
         }

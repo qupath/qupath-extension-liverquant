@@ -27,6 +27,7 @@ import java.util.regex.Pattern;
 public class DetectFatGlobulesWindow extends Stage {
 
     private static final ResourceBundle resources = UiUtilities.getResources();
+    private static final Pattern unsignerIntegerPattern = Pattern.compile("\\d*");
     @FXML
     private ChoiceBox<FatGlobulesDetectorParameters.ObjectToCreate> objectsToCreate;
     @FXML
@@ -75,9 +76,6 @@ public class DetectFatGlobulesWindow extends Stage {
     public DetectFatGlobulesWindow(Stage owner) throws IOException {
         initUI(owner);
 
-        //TODO: add tooltips
-        //TODO: check input (e.g. 0 < hue < 180)
-        //TODO: strings fr
         //TODO: Groovy much faster
     }
 
@@ -107,27 +105,27 @@ public class DetectFatGlobulesWindow extends Stage {
         FatGlobuleDetector.run(new FatGlobulesDetectorParameters.Builder(imageData, selectedAnnotations)
                 .setProgressDisplay(FatGlobulesDetectorParameters.ProgressDisplay.WINDOW)
                 .setObjectToCreate(objectsToCreate.getSelectionModel().getSelectedItem())
-                .setPixelSize(Float.parseFloat(pixelSize.getText()))
+                .setPixelSize(pixelSize.getText().isEmpty() ? 0 : Float.parseFloat(pixelSize.getText()))
                 .setLowerBound(new FatGlobulesDetectorParameters.HsvArray(
-                        Integer.parseInt(lowerHue.getText()),
-                        Integer.parseInt(lowerSaturation.getText()),
-                        Integer.parseInt(lowerValue.getText())
+                        lowerHue.getText().isEmpty() ? 0 : Integer.parseInt(lowerHue.getText()),
+                        lowerSaturation.getText().isEmpty() ? 0 : Integer.parseInt(lowerSaturation.getText()),
+                        lowerValue.getText().isEmpty() ? 0 : Integer.parseInt(lowerValue.getText())
                 ))
                 .setUpperBound(new FatGlobulesDetectorParameters.HsvArray(
-                        Integer.parseInt(upperHue.getText()),
-                        Integer.parseInt(upperSaturation.getText()),
-                        Integer.parseInt(upperValue.getText())
+                        upperHue.getText().isEmpty() ? 0 : Integer.parseInt(upperHue.getText()),
+                        upperSaturation.getText().isEmpty() ? 0 : Integer.parseInt(upperSaturation.getText()),
+                        upperValue.getText().isEmpty() ? 0 : Integer.parseInt(upperValue.getText())
                 ))
-                .setMinIsolatedGlobuleElongation(Float.parseFloat(minIsolatedGlobuleElongation.getText()))
-                .setMinOverlappingGlobuleElongation(Float.parseFloat(minOverlappingGlobuleElongation.getText()))
-                .setMinIsolatedGlobuleSolidity(Float.parseFloat(minIsolatedGlobuleSolidity.getText()))
-                .setMinOverlappingGlobuleSolidity(Float.parseFloat(minOverlappingGlobuleSolidity.getText()))
-                .setMinDiameter(Float.parseFloat(minDiameter.getText()))
-                .setMaxDiameter(Float.parseFloat(maxDiameter.getText()))
-                .setTileWidth(Integer.parseInt(tileWidth.getText()))
-                .setTileHeight(Integer.parseInt(tileHeight.getText()))
-                .setPadding(Integer.parseInt(padding.getText()))
-                .setBoundaryThreshold(Float.parseFloat(boundaryThreshold.getText()))
+                .setMinIsolatedGlobuleElongation(minIsolatedGlobuleElongation.getText().isEmpty() ? 0 : Float.parseFloat(minIsolatedGlobuleElongation.getText()))
+                .setMinOverlappingGlobuleElongation(minOverlappingGlobuleElongation.getText().isEmpty() ? 0 : Float.parseFloat(minOverlappingGlobuleElongation.getText()))
+                .setMinIsolatedGlobuleSolidity(minIsolatedGlobuleSolidity.getText().isEmpty() ? 0 : Float.parseFloat(minIsolatedGlobuleSolidity.getText()))
+                .setMinOverlappingGlobuleSolidity(minOverlappingGlobuleSolidity.getText().isEmpty() ? 0 : Float.parseFloat(minOverlappingGlobuleSolidity.getText()))
+                .setMinDiameter(minDiameter.getText().isEmpty() ? 0 : Float.parseFloat(minDiameter.getText()))
+                .setMaxDiameter(maxDiameter.getText().isEmpty() ? 0 : Float.parseFloat(maxDiameter.getText()))
+                .setTileWidth(tileWidth.getText().isEmpty() ? 0 : Integer.parseInt(tileWidth.getText()))
+                .setTileHeight(tileHeight.getText().isEmpty() ? 0 : Integer.parseInt(tileHeight.getText()))
+                .setPadding(padding.getText().isEmpty() ? 0 : Integer.parseInt(padding.getText()))
+                .setBoundaryThreshold(boundaryThreshold.getText().isEmpty() ? 0 : Float.parseFloat(boundaryThreshold.getText()))
                 .setOnFinished(() -> Platform.runLater(() -> {
                     run.setDisable(false);
                     quPathGUI.getViewer().getHierarchy().resolveHierarchy();
@@ -141,13 +139,12 @@ public class DetectFatGlobulesWindow extends Stage {
 
         FatGlobulesDetectorParameters defaultParameters = new FatGlobulesDetectorParameters.Builder(null, null).build();
 
-        Pattern unsignerIntegerPattern = Pattern.compile("\\d*");
-        UnaryOperator<TextFormatter.Change> unsignedIntegerFilter = change ->
-                unsignerIntegerPattern.matcher(change.getControlNewText()).matches() ? change : null;
-
         Pattern unsignerFloatPattern = Pattern.compile("\\d*\\.?\\d*");
         UnaryOperator<TextFormatter.Change> unsignedFloatFilter = change ->
                 unsignerFloatPattern.matcher(change.getControlNewText()).matches() ? change : null;
+        Pattern floatPattern = Pattern.compile("[+-]?\\d*\\.?\\d*");
+        UnaryOperator<TextFormatter.Change> floatFilter = change ->
+                floatPattern.matcher(change.getControlNewText()).matches() ? change : null;
 
         objectsToCreate.setItems(FXCollections.observableList(List.of(FatGlobulesDetectorParameters.ObjectToCreate.values())));
         objectsToCreate.setConverter(new StringConverter<>() {
@@ -166,7 +163,7 @@ public class DetectFatGlobulesWindow extends Stage {
         });
         objectsToCreate.getSelectionModel().select(defaultParameters.getObjectToCreate());
         pixelSize.setText(String.valueOf(defaultParameters.getPixelSize()));
-        pixelSize.setTextFormatter(new TextFormatter<>(unsignedFloatFilter));
+        pixelSize.setTextFormatter(new TextFormatter<>(floatFilter));
 
         lowerHue.setText(String.valueOf(defaultParameters.getLowerBound().hue()));
         lowerSaturation.setText(String.valueOf(defaultParameters.getLowerBound().saturation()));
@@ -174,12 +171,12 @@ public class DetectFatGlobulesWindow extends Stage {
         upperHue.setText(String.valueOf(defaultParameters.getUpperBound().hue()));
         upperSaturation.setText(String.valueOf(defaultParameters.getUpperBound().saturation()));
         upperValue.setText(String.valueOf(defaultParameters.getUpperBound().value()));
-        lowerHue.setTextFormatter(new TextFormatter<>(unsignedIntegerFilter));
-        lowerSaturation.setTextFormatter(new TextFormatter<>(unsignedIntegerFilter));
-        lowerValue.setTextFormatter(new TextFormatter<>(unsignedIntegerFilter));
-        upperHue.setTextFormatter(new TextFormatter<>(unsignedIntegerFilter));
-        upperSaturation.setTextFormatter(new TextFormatter<>(unsignedIntegerFilter));
-        upperValue.setTextFormatter(new TextFormatter<>(unsignedIntegerFilter));
+        lowerHue.setTextFormatter(new TextFormatter<>(getIntegerBetweenBoundsFilter(180)));
+        lowerSaturation.setTextFormatter(new TextFormatter<>(getIntegerBetweenBoundsFilter(255)));
+        lowerValue.setTextFormatter(new TextFormatter<>(getIntegerBetweenBoundsFilter(255)));
+        upperHue.setTextFormatter(new TextFormatter<>(getIntegerBetweenBoundsFilter(180)));
+        upperSaturation.setTextFormatter(new TextFormatter<>(getIntegerBetweenBoundsFilter(255)));
+        upperValue.setTextFormatter(new TextFormatter<>(getIntegerBetweenBoundsFilter(255)));
 
         minIsolatedGlobuleElongation.setText(String.valueOf(defaultParameters.getMinIsolatedGlobuleElongation()));
         minOverlappingGlobuleElongation.setText(String.valueOf(defaultParameters.getMinOverlappingGlobuleElongation()));
@@ -198,9 +195,9 @@ public class DetectFatGlobulesWindow extends Stage {
         tileHeight.setText(String.valueOf(defaultParameters.getTileHeight()));
         padding.setText(String.valueOf(defaultParameters.getPadding()));
         boundaryThreshold.setText(String.valueOf(defaultParameters.getBoundaryThreshold()));
-        tileWidth.setTextFormatter(new TextFormatter<>(unsignedIntegerFilter));
-        tileHeight.setTextFormatter(new TextFormatter<>(unsignedIntegerFilter));
-        padding.setTextFormatter(new TextFormatter<>(unsignedIntegerFilter));
+        tileWidth.setTextFormatter(new TextFormatter<>(getIntegerBetweenBoundsFilter(Integer.MAX_VALUE)));
+        tileHeight.setTextFormatter(new TextFormatter<>(getIntegerBetweenBoundsFilter(Integer.MAX_VALUE)));
+        padding.setTextFormatter(new TextFormatter<>(getIntegerBetweenBoundsFilter(Integer.MAX_VALUE)));
         boundaryThreshold.setTextFormatter(new TextFormatter<>(unsignedFloatFilter));
 
         if (owner != null) {
@@ -208,5 +205,28 @@ public class DetectFatGlobulesWindow extends Stage {
         }
 
         show();
+    }
+
+    private static UnaryOperator<TextFormatter.Change> getIntegerBetweenBoundsFilter(int upperBound) {
+        return change -> {
+            if (unsignerIntegerPattern.matcher(change.getControlNewText()).matches()) {
+                if (change.getControlNewText().isEmpty()) {
+                    return change;
+                } else {
+                    try {
+                        int value = Integer.parseInt(change.getControlNewText());
+                        if (value < 0 || value > upperBound) {
+                            return null;
+                        } else {
+                            return change;
+                        }
+                    } catch (NumberFormatException e) {
+                        return null;
+                    }
+                }
+            } else {
+                return null;
+            }
+        };
     }
 }
