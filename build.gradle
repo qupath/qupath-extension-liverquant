@@ -3,48 +3,25 @@ plugins {
     id 'java-library'
     // To create a shadow/fat jar that bundle up all dependencies
     id 'com.github.johnrengelman.shadow' version '8.1.1'
-
-    id 'org.bytedeco.gradle-javacpp-platform'
+    // Add JavaFX dependencies
     alias(libs.plugins.javafx)
+    // Version in settings.gradle
+    id 'org.bytedeco.gradle-javacpp-platform'
 }
 
 ext.moduleName = 'qupath.extension.liverquant'
-
+ext.qupathVersion = gradle.ext.qupathVersion
+ext.qupathJavaVersion = 17
 base {
-    archivesName = rootProject.name
     version = '0.0.1-SNAPSHOT'
     description = 'A QuPath extension to assess Non-alcoholic Fatty Liver Disease (NAFLD)'
 }
-ext.qupathVersion = gradle.ext.qupathVersion
-ext.qupathJavaVersion = 17
 
-/**
- * Define dependencies.
- * - Using 'shadow' indicates that they are already part of QuPath, so you don't need
- *   to include them in your extension. If creating a single 'shadow jar' containing your
- *   extension and all dependencies, these won't be added.
- * - Using 'implementation' indicates that you need the dependency for the extension to work,
- *   and it isn't part of QuPath already. If you are creating a single 'shadow jar', the
- *   dependency should be bundled up in the extension.
- * - Using 'testImplementation' indicates that the dependency is only needed for testing,
- *   but shouldn't be bundled up for use in the extension.
- */
 dependencies {
-
-    // Main QuPath user interface jar.
-    // Automatically includes other QuPath jars as subdependencies.
-    //shadow "io.github.qupath:qupath-gui-fx:${qupathVersion}"
-    shadow "io.github.qupath:qupath-gui-fx:0.5.0"
+    shadow "io.github.qupath:qupath-gui-fx:${qupathVersion}"
     shadow libs.qupath.fxtras
 
-    // For logging - the version comes from QuPath's version catalog at
-    // https://github.com/qupath/qupath/blob/main/gradle/libs.versions.toml
-    // See https://docs.gradle.org/current/userguide/platforms.html
     shadow libs.slf4j
-
-    //testImplementation "io.github.qupath:qupath-gui-fx:${qupathVersion}"
-    testImplementation "io.github.qupath:qupath-gui-fx:0.5.0"
-    testImplementation libs.junit
 }
 
 /*
