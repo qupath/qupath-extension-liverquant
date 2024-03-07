@@ -19,7 +19,7 @@
         <Scene stylesheets="@../styles.css">
             <VBox spacing="10.0">
             <children>
-               <VBox>
+               <VBox spacing="5.0">
                   <children>
                      <Label styleClass="title" text="%DetectFatGlobulesWindow.setupParameters" />
                      <GridPane hgap="5.0">
@@ -63,7 +63,7 @@
                      </GridPane>
                   </children>
                </VBox>
-               <VBox>
+               <VBox spacing="5.0">
                   <children>
                      <Label styleClass="title" text="%DetectFatGlobulesWindow.colorSegmentationParameters" />
                      <GridPane hgap="5.0">
@@ -123,7 +123,7 @@
                      </GridPane>
                   </children>
                </VBox>
-               <VBox>
+               <VBox spacing="5.0">
                   <children>
                      <Label styleClass="title" text="%DetectFatGlobulesWindow.filterParameters" />
                      <GridPane hgap="5.0">
@@ -204,7 +204,7 @@
                      </GridPane>
                   </children>
                </VBox>
-               <VBox>
+               <VBox spacing="5.0">
                   <children>
                      <Label styleClass="title" text="%DetectFatGlobulesWindow.tileParameters" />
                      <GridPane hgap="5.0">

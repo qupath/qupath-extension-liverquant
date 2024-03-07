@@ -32,7 +32,7 @@ public class LiverquantExtension implements QuPathExtension, GitHubProject {
 
 			MenuTools.addMenuItems(
 					qupath.getMenu("Extensions", false),
-					new DetectFatGlobulesMenu(qupath)
+					MenuTools.createMenu("Liverquant", new DetectFatGlobulesMenu(qupath))
 			);
 		}
 	}
