@@ -2,7 +2,7 @@
 
 A QuPath extension to run the [Liverquant](https://github.com/mfarzi/liverquant) algorithm.
 
-The extension is intended for QuPath v0.5 and later. It is not compatible with earlier QuPath versions.
+The extension is intended for QuPath v0.5.1 and later. It is not compatible with earlier QuPath versions.
 
 ## Installing
 
