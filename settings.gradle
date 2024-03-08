@@ -10,7 +10,7 @@ pluginManagement {
 
 rootProject.name = 'qupath-extension-liverquant'
 
-gradle.ext.qupathVersion = "0.5.0"
+gradle.ext.qupathVersion = "0.5.1"
 
 dependencyResolutionManagement {
 
