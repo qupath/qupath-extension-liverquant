@@ -75,8 +75,6 @@ public class DetectFatGlobulesWindow extends Stage {
      */
     public DetectFatGlobulesWindow(Stage owner) throws IOException {
         initUI(owner);
-
-        //TODO: Groovy much faster
     }
 
     @FXML
