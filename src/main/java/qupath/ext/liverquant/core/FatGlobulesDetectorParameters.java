@@ -279,8 +279,8 @@ public class FatGlobulesDetectorParameters {
         }
 
         /**
-         * @param pixelSize  the pixel size in microns at which detection should be performed. Write a value <=0
-         *                   if the full resolution image should be used.
+         * @param pixelSize  the pixel size in microns at which detection should be performed. A negative value
+         *                   means that the full resolution image should be used.
          * @return this builder
          */
         public Builder setPixelSize(float pixelSize) {
