@@ -14,6 +14,7 @@ import org.bytedeco.opencv.opencv_core.Scalar;
 import org.bytedeco.opencv.opencv_core.Size;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import qupath.lib.regions.Padding;
 import qupath.lib.regions.RegionRequest;
 import qupath.lib.roi.RoiTools;
 import qupath.opencv.tools.OpenCVTools;
@@ -42,7 +43,7 @@ class MatOperations {
      * @param lowerBound  inclusive lower bound array in HSV-space for color segmentation
      * @param upperBound  inclusive upper bound array in HSV-space for color segmentation
      */
-    public static void segmentByColor(Mat mat, FatGlobulesDetectorParameters.HsvArray lowerBound, FatGlobulesDetectorParameters.HsvArray upperBound) {
+    public static void segmentByColor(Mat mat, HsvArray lowerBound, HsvArray upperBound) {
         try (
                 Scalar lowerBoundScalar = new Scalar(
                         lowerBound.hue(),
@@ -77,13 +78,24 @@ class MatOperations {
     }
 
     /**
+     * Remove a border of one pixel to the provided image.
+     *
+     * @param mat  the image to remove a border from. This image will be closed by this function
+     * @return a new image corresponding to the provided image without a border of one pixel
+     */
+    public static Mat removeBorder(Mat mat) {
+        Mat res = OpenCVTools.crop(mat, Padding.symmetric(1));
+        mat.close();
+        return res;
+    }
+
+    /**
      * Fill some holes of a mask with white pixels. The provided mask will be modified.
      *
      * @param mask  the mask containing the holes to fill. It must have the {@link opencv_core#CV_8U} format
-     * @param holeSize  the maximal size (area) a hole can have to be filled
-     * @param resolution  the pixel resolution of the mask in microns
+     * @param maxHoleSize  the maximal area a hole can have to be filled (in pixel units). Not taken into account if less than 0
      */
-    public static void fillHoles(Mat mask, double holeSize, double resolution) {
+    public static void fillHoles(Mat mask, double maxHoleSize) {
         try (
                 MatVector contours = new MatVector();
                 Mat hierarchy = new Mat()
@@ -93,7 +105,7 @@ class MatOperations {
             try (IntRawIndexer indexer = hierarchy.createIndexer()) {
                 for (int i=0; i<contours.size(); ++i) {
                     if (indexer.get(0, i, 3) > -1 &&
-                            holeSize < 0 || opencv_imgproc.contourArea(contours.get(i)) * resolution * resolution < holeSize
+                            maxHoleSize < 0 || opencv_imgproc.contourArea(contours.get(i)) < maxHoleSize
                     ) {
                         Mat[] contoursArray = new Mat[] {contours.get(i)};
 
@@ -129,7 +141,16 @@ class MatOperations {
      * @param mask  the mask containing the holes to fill. It must have the {@link opencv_core#CV_8U} format
      */
     public static void fillHoles(Mat mask) {
-        fillHoles(mask, -1, 0);
+        fillHoles(mask, -1);
+    }
+
+    /**
+     * Perform a bitwise NOT operation on the pixels of the provided image.
+     *
+     * @param mat  the image whose pixels should be changed
+     */
+    public static void bitwiseNot(Mat mat) {
+        opencv_core.bitwise_not(mat, mat);
     }
 
     /**

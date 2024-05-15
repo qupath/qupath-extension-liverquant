@@ -28,7 +28,7 @@ import java.util.stream.IntStream;
 
 
 /**
- * Enable the detection of fat globules within image tiles based on
+ * Detect fat globules within image tiles based on
  * <a href="https://github.com/mfarzi/liverquant">liverquant</a>.
  */
 public class FatGlobuleDetector {
@@ -102,12 +102,15 @@ public class FatGlobuleDetector {
         ExecutorService executor = Executors.newSingleThreadExecutor();
         executor.execute(() -> {
             processor.processObjects(
-                switch (fatGlobulesDetectorParameters.getProgressDisplay()) {
-                    case WINDOW -> new TaskRunnerFX(QuPathGUI.getInstance());
-                    case LOG -> new CommandLineTaskRunner();
-                },
-                fatGlobulesDetectorParameters.getImageData(),
-                fatGlobulesDetectorParameters.getAnnotations()
+                    switch (fatGlobulesDetectorParameters.getProgressDisplay()) {
+                        case WINDOW -> new TaskRunnerFX(QuPathGUI.getInstance());
+                        case LOG -> new CommandLineTaskRunner();
+                    },
+                    fatGlobulesDetectorParameters.getImageData(),
+                    switch (fatGlobulesDetectorParameters.getDetectionRegion()) {
+                        case SELECTED_ANNOTATIONS -> fatGlobulesDetectorParameters.getAnnotations();
+                        case DETECTED_TISSUE -> TissueDetector.detectTissue(fatGlobulesDetectorParameters.getTissueDetectorParameters());
+                    }
             );
 
             fatGlobulesDetectorParameters.getOnFinished().run();

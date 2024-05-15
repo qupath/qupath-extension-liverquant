@@ -5,7 +5,7 @@ import qupath.lib.images.ImageData;
 import qupath.lib.objects.PathObject;
 
 import java.awt.image.BufferedImage;
-import java.util.Collection;
+import java.util.List;
 
 /**
  * <p>
@@ -18,7 +18,9 @@ import java.util.Collection;
 public class FatGlobulesDetectorParameters {
 
     private final ImageData<BufferedImage> imageData;
-    private final Collection<PathObject> annotations;
+    private final TissueDetectorParameters tissueDetectorParameters;
+    private final List<PathObject> annotations;
+    private final DetectionRegion detectionRegion;
     private final ProgressDisplay progressDisplay;
     private final ObjectToCreate objectToCreate;
     private final float pixelSize;
@@ -36,6 +38,13 @@ public class FatGlobulesDetectorParameters {
     private final float boundaryThreshold;
     private final Runnable onFinished;
     /**
+     * Define where to run the detection
+     */
+    public enum DetectionRegion {
+        SELECTED_ANNOTATIONS,
+        DETECTED_TISSUE
+    }
+    /**
      * Define the type of object to create to represent a globule
      */
     public enum ObjectToCreate {
@@ -52,7 +61,9 @@ public class FatGlobulesDetectorParameters {
 
     private FatGlobulesDetectorParameters(Builder builder) {
         this.imageData = builder.imageData;
+        this.tissueDetectorParameters = builder.tissueDetectorParameters;
         this.annotations = builder.annotations;
+        this.detectionRegion = builder.detectionRegion;
         this.progressDisplay = builder.progressDisplay;
         this.objectToCreate = builder.objectToCreate;
         this.pixelSize = builder.pixelSize;
@@ -79,10 +90,26 @@ public class FatGlobulesDetectorParameters {
     }
 
     /**
-     * @return the annotations that define the areas where the detection should take place
+     * @return the parameters the tissue detector should use. To use only if
+     * {@link #getDetectionRegion()} returns {@link DetectionRegion#SELECTED_ANNOTATIONS}
      */
-    public Collection<PathObject> getAnnotations() {
+    public TissueDetectorParameters getTissueDetectorParameters() {
+        return tissueDetectorParameters;
+    }
+
+    /**
+     * @return the annotations that define the areas where the detection should take place.
+     * To use only if {@link #getDetectionRegion()} returns {@link DetectionRegion#DETECTED_TISSUE}
+     */
+    public List<PathObject> getAnnotations() {
         return annotations;
+    }
+
+    /**
+     * @return the area where to perform the detection
+     */
+    public DetectionRegion getDetectionRegion() {
+        return detectionRegion;
     }
 
     /**
@@ -202,36 +229,15 @@ public class FatGlobulesDetectorParameters {
         return onFinished;
     }
 
-    public record HsvArray(int hue, int saturation, int value) {
-
-        /**
-         * Define a pixel value in the HSV-space.
-         *
-         * @param hue  the hue of the pixel, between 0 and 180
-         * @param saturation  the saturation of the pixel, between 0 and 255
-         * @param value  the value of the pixel, between 0 and 255
-         * @throws IllegalArgumentException if one of the value is not in the correct range
-         */
-        public HsvArray {
-            if (hue < 0 || hue > 180) {
-                throw new IllegalArgumentException(String.format("The supplied hue (%d) is not within the required range ([0, 180])", hue));
-            }
-            if (saturation < 0 || saturation > 255) {
-                throw new IllegalArgumentException(String.format("The supplied saturation (%d) is not within the required range ([0, 255])", saturation));
-            }
-            if (value < 0 || value > 255) {
-                throw new IllegalArgumentException(String.format("The supplied value (%d) is not within the required range ([0, 255])", value));
-            }
-        }
-    }
-
     /**
      * Create an instance of {@link FatGlobulesDetectorParameters}.
      */
     public static class Builder {
 
         private final ImageData<BufferedImage> imageData;
-        private final Collection<PathObject> annotations;
+        private TissueDetectorParameters tissueDetectorParameters;
+        private List<PathObject> annotations = List.of();
+        private DetectionRegion detectionRegion = DetectionRegion.SELECTED_ANNOTATIONS;
         private ProgressDisplay progressDisplay = UiUtilities.usingGUI() ? ProgressDisplay.WINDOW : ProgressDisplay.LOG;
         private ObjectToCreate objectToCreate = ObjectToCreate.DETECTION;
         private float pixelSize = -1f;
@@ -253,11 +259,44 @@ public class FatGlobulesDetectorParameters {
          * Create the builder.
          *
          * @param imageData  the ImageData representing the image to use the algorithm on
-         * @param annotations  the annotations that define the areas where the detection should take place
          */
-        public Builder(ImageData<BufferedImage> imageData, Collection<PathObject> annotations) {
+        public Builder(ImageData<BufferedImage> imageData) {
             this.imageData = imageData;
+            this.tissueDetectorParameters = new TissueDetectorParameters.Builder(imageData.getServer()).build();
+        }
+
+        /**
+         * @param tissueDetectorParameters  the parameters to use when performing the tissue detection.
+         *                                  This parameter is only taken into account if {@link #setDetectionRegion(DetectionRegion)}
+         *                                  is set to {@link DetectionRegion#DETECTED_TISSUE}
+         * @return this builder
+         */
+        public Builder setTissueDetectorParameters(TissueDetectorParameters tissueDetectorParameters) {
+            this.tissueDetectorParameters = tissueDetectorParameters;
+            return this;
+        }
+
+        /**
+         * @param annotations  the annotations that define the areas where the detection should take place.
+         *                     This parameter is only taken into account if {@link #setDetectionRegion(DetectionRegion)}
+         *                     is set to {@link DetectionRegion#SELECTED_ANNOTATIONS}
+         * @return this builder
+         */
+        public Builder setAnnotations(List<PathObject> annotations) {
             this.annotations = annotations;
+            return this;
+        }
+
+        /**
+         * @param detectionRegion  where to run the detection. If {@link DetectionRegion#DETECTED_TISSUE}
+         *                         is selected, an algorithm to detect the tissue will be run on the entire
+         *                         image before the fat globule detection. See {@link #setTissueDetectorParameters(TissueDetectorParameters)}
+         *                         to define the parameters to use for this detection
+         * @return this builder
+         */
+        public Builder setDetectionRegion(DetectionRegion detectionRegion) {
+            this.detectionRegion = detectionRegion;
+            return this;
         }
 
         /**
