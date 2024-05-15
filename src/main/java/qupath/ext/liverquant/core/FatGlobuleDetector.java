@@ -109,7 +109,11 @@ public class FatGlobuleDetector {
                     fatGlobulesDetectorParameters.getImageData(),
                     switch (fatGlobulesDetectorParameters.getDetectionRegion()) {
                         case SELECTED_ANNOTATIONS -> fatGlobulesDetectorParameters.getAnnotations();
-                        case DETECTED_TISSUE -> TissueDetector.detectTissue(fatGlobulesDetectorParameters.getTissueDetectorParameters());
+                        case DETECTED_TISSUE -> {
+                            List<PathObject> annotations = TissueDetector.detectTissue(fatGlobulesDetectorParameters.getTissueDetectorParameters());
+                            fatGlobulesDetectorParameters.getImageData().getHierarchy().addObjects(annotations);
+                            yield annotations;
+                        }
                     }
             );
 

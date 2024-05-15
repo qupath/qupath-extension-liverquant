@@ -6,6 +6,7 @@ import org.slf4j.LoggerFactory;
 import qupath.lib.objects.PathObject;
 import qupath.lib.objects.PathObjects;
 import qupath.lib.regions.RegionRequest;
+import qupath.lib.roi.RoiTools;
 import qupath.opencv.tools.OpenCVTools;
 
 import java.io.IOException;
@@ -48,6 +49,8 @@ public class TissueDetector {
         MatOperations.fillHoles(mat);
 
         List<PathObject> annotations = OpenCVTools.createROIs(mat, regionRequest, 1, -1).values().stream()
+                .map(RoiTools::splitROI)
+                .flatMap(List::stream)
                 .map(PathObjects::createAnnotationObject)
                 .peek(annotation -> annotation.setLocked(true))
                 .toList();
