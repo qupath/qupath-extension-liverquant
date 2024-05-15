@@ -262,7 +262,7 @@ public class FatGlobulesDetectorParameters {
          */
         public Builder(ImageData<BufferedImage> imageData) {
             this.imageData = imageData;
-            this.tissueDetectorParameters = new TissueDetectorParameters.Builder(imageData.getServer()).build();
+            this.tissueDetectorParameters = new TissueDetectorParameters.Builder(imageData == null ? null : imageData.getServer()).build();
         }
 
         /**
