@@ -237,7 +237,7 @@ public class FatGlobulesDetectorParameters {
         private final ImageData<BufferedImage> imageData;
         private TissueDetectorParameters tissueDetectorParameters;
         private List<PathObject> annotations = List.of();
-        private DetectionRegion detectionRegion = DetectionRegion.SELECTED_ANNOTATIONS;
+        private DetectionRegion detectionRegion = DetectionRegion.DETECTED_TISSUE;
         private ProgressDisplay progressDisplay = UiUtilities.usingGUI() ? ProgressDisplay.WINDOW : ProgressDisplay.LOG;
         private ObjectToCreate objectToCreate = ObjectToCreate.DETECTION;
         private float pixelSize = -1f;
