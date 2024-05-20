@@ -18,6 +18,7 @@ import qupath.lib.objects.PathObjects;
 import qupath.lib.plugins.CommandLineTaskRunner;
 import qupath.lib.regions.RegionRequest;
 import qupath.lib.roi.ROIs;
+import qupath.lib.roi.interfaces.ROI;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -101,21 +102,34 @@ public class FatGlobuleDetector {
 
         ExecutorService executor = Executors.newSingleThreadExecutor();
         executor.execute(() -> {
+            List<PathObject> annotations = switch (fatGlobulesDetectorParameters.getDetectionRegion()) {
+                case SELECTED_ANNOTATIONS -> fatGlobulesDetectorParameters.getAnnotations();
+                case DETECTED_TISSUE -> {
+                    List<PathObject> tissueAnnotations = TissueDetector.detectTissue(fatGlobulesDetectorParameters.getTissueDetectorParameters());
+                    fatGlobulesDetectorParameters.getImageData().getHierarchy().addObjects(tissueAnnotations);
+                    yield tissueAnnotations;
+                }
+            };
+
             processor.processObjects(
                     switch (fatGlobulesDetectorParameters.getProgressDisplay()) {
                         case WINDOW -> new TaskRunnerFX(QuPathGUI.getInstance());
                         case LOG -> new CommandLineTaskRunner();
                     },
                     fatGlobulesDetectorParameters.getImageData(),
-                    switch (fatGlobulesDetectorParameters.getDetectionRegion()) {
-                        case SELECTED_ANNOTATIONS -> fatGlobulesDetectorParameters.getAnnotations();
-                        case DETECTED_TISSUE -> {
-                            List<PathObject> annotations = TissueDetector.detectTissue(fatGlobulesDetectorParameters.getTissueDetectorParameters());
-                            fatGlobulesDetectorParameters.getImageData().getHierarchy().addObjects(annotations);
-                            yield annotations;
-                        }
-                    }
+                    annotations
             );
+
+            for (PathObject annotation: annotations) {
+                annotation.getMeasurementList().put(
+                        "Steatosis Proportionate Area",
+                        annotation.getChildObjects().stream()
+                                .map(PathObject::getROI)
+                                .map(ROI::getArea)
+                                .reduce(Double::sum).orElse(0d)
+                                / annotation.getROI().getArea()
+                );
+            }
 
             fatGlobulesDetectorParameters.getOnFinished().run();
         });
