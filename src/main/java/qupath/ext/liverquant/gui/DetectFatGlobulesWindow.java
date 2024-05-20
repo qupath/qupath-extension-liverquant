@@ -4,11 +4,17 @@ import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
-import javafx.scene.control.*;
+import javafx.scene.control.Button;
+import javafx.scene.control.ChoiceBox;
+import javafx.scene.control.TextField;
+import javafx.scene.control.TextFormatter;
+import javafx.scene.control.TitledPane;
 import javafx.stage.Stage;
 import javafx.util.StringConverter;
 import qupath.ext.liverquant.core.FatGlobuleDetector;
 import qupath.ext.liverquant.core.FatGlobulesDetectorParameters;
+import qupath.ext.liverquant.core.HsvArray;
+import qupath.ext.liverquant.core.TissueDetectorParameters;
 import qupath.lib.gui.QuPathGUI;
 import qupath.fx.dialogs.Dialogs;
 import qupath.lib.images.ImageData;
@@ -32,6 +38,8 @@ public class DetectFatGlobulesWindow extends Stage {
     private ChoiceBox<FatGlobulesDetectorParameters.ObjectToCreate> objectsToCreate;
     @FXML
     private TextField pixelSize;
+    @FXML
+    private ChoiceBox<FatGlobulesDetectorParameters.DetectionRegion> detectionRegion;
     @FXML
     private TextField lowerHue;
     @FXML
@@ -65,6 +73,24 @@ public class DetectFatGlobulesWindow extends Stage {
     @FXML
     private TextField boundaryThreshold;
     @FXML
+    private TitledPane tissueDetectionParameters;
+    @FXML
+    private TextField lowerHueTissue;
+    @FXML
+    private TextField lowerSaturationTissue;
+    @FXML
+    private TextField lowerValueTissue;
+    @FXML
+    private TextField upperHueTissue;
+    @FXML
+    private TextField upperSaturationTissue;
+    @FXML
+    private TextField upperValueTissue;
+    @FXML
+    private TextField downsample;
+    @FXML
+    private TextField minTissueArea;
+    @FXML
     private Button run;
 
     /**
@@ -91,7 +117,9 @@ public class DetectFatGlobulesWindow extends Stage {
         }
 
         List<PathObject> selectedAnnotations = quPathGUI.getViewer().getAllSelectedObjects().stream().filter(PathObject::isAnnotation).toList();
-        if (selectedAnnotations.isEmpty()) {
+        if (detectionRegion.getSelectionModel().getSelectedItem().equals(FatGlobulesDetectorParameters.DetectionRegion.SELECTED_ANNOTATIONS)
+                && selectedAnnotations.isEmpty()
+        ) {
             Dialogs.showErrorMessage(
                     resources.getString("DetectFatGlobulesWindow.liverquant"),
                     resources.getString("DetectFatGlobulesWindow.selectAtLeastOneAnnotation")
@@ -100,16 +128,33 @@ public class DetectFatGlobulesWindow extends Stage {
         }
 
         run.setDisable(true);
-        FatGlobuleDetector.run(new FatGlobulesDetectorParameters.Builder(imageData, selectedAnnotations)
+        FatGlobuleDetector.run(new FatGlobulesDetectorParameters.Builder(imageData)
+                .setTissueDetectorParameters(new TissueDetectorParameters.Builder(imageData.getServer())
+                        .setLowerBound(new HsvArray(
+                                lowerHueTissue.getText().isEmpty() ? 0 : Integer.parseInt(lowerHueTissue.getText()),
+                                lowerSaturationTissue.getText().isEmpty() ? 0 : Integer.parseInt(lowerSaturationTissue.getText()),
+                                lowerValueTissue.getText().isEmpty() ? 0 : Integer.parseInt(lowerValueTissue.getText())
+                        ))
+                        .setUpperBound(new HsvArray(
+                                upperHueTissue.getText().isEmpty() ? 0 : Integer.parseInt(upperHueTissue.getText()),
+                                upperSaturationTissue.getText().isEmpty() ? 0 : Integer.parseInt(upperSaturationTissue.getText()),
+                                upperValueTissue.getText().isEmpty() ? 0 : Integer.parseInt(upperValueTissue.getText())
+                        ))
+                        .setDownsample(downsample.getText().isEmpty() ? 0 : Float.parseFloat(downsample.getText()))
+                        .setMinTissueArea(minTissueArea.getText().isEmpty() ? 0 : Float.parseFloat(minTissueArea.getText()))
+                        .build()
+                )
+                .setAnnotations(selectedAnnotations)
+                .setDetectionRegion(detectionRegion.getSelectionModel().getSelectedItem())
                 .setProgressDisplay(FatGlobulesDetectorParameters.ProgressDisplay.WINDOW)
                 .setObjectToCreate(objectsToCreate.getSelectionModel().getSelectedItem())
                 .setPixelSize(pixelSize.getText().isEmpty() ? 0 : Float.parseFloat(pixelSize.getText()))
-                .setLowerBound(new FatGlobulesDetectorParameters.HsvArray(
+                .setLowerBound(new HsvArray(
                         lowerHue.getText().isEmpty() ? 0 : Integer.parseInt(lowerHue.getText()),
                         lowerSaturation.getText().isEmpty() ? 0 : Integer.parseInt(lowerSaturation.getText()),
                         lowerValue.getText().isEmpty() ? 0 : Integer.parseInt(lowerValue.getText())
                 ))
-                .setUpperBound(new FatGlobulesDetectorParameters.HsvArray(
+                .setUpperBound(new HsvArray(
                         upperHue.getText().isEmpty() ? 0 : Integer.parseInt(upperHue.getText()),
                         upperSaturation.getText().isEmpty() ? 0 : Integer.parseInt(upperSaturation.getText()),
                         upperValue.getText().isEmpty() ? 0 : Integer.parseInt(upperValue.getText())
@@ -135,7 +180,7 @@ public class DetectFatGlobulesWindow extends Stage {
     private void initUI(Stage owner) throws IOException {
         UiUtilities.loadFXML(this, DetectFatGlobulesWindow.class.getResource("detect_fat_globules.fxml"));
 
-        FatGlobulesDetectorParameters defaultParameters = new FatGlobulesDetectorParameters.Builder(null, null).build();
+        FatGlobulesDetectorParameters defaultParameters = new FatGlobulesDetectorParameters.Builder(null).build();
 
         Pattern unsignerFloatPattern = Pattern.compile("\\d*\\.?\\d*");
         UnaryOperator<TextFormatter.Change> unsignedFloatFilter = change ->
@@ -162,6 +207,22 @@ public class DetectFatGlobulesWindow extends Stage {
         objectsToCreate.getSelectionModel().select(defaultParameters.getObjectToCreate());
         pixelSize.setText(String.valueOf(defaultParameters.getPixelSize()));
         pixelSize.setTextFormatter(new TextFormatter<>(floatFilter));
+        detectionRegion.setItems(FXCollections.observableList(List.of(FatGlobulesDetectorParameters.DetectionRegion.values())));
+        detectionRegion.setConverter(new StringConverter<>() {
+            @Override
+            public String toString(FatGlobulesDetectorParameters.DetectionRegion object) {
+                return switch (object) {
+                    case DETECTED_TISSUE -> resources.getString("DetectFatGlobulesWindow.detectedTissue");
+                    case SELECTED_ANNOTATIONS -> resources.getString("DetectFatGlobulesWindow.selectedAnnotations");
+                };
+            }
+
+            @Override
+            public FatGlobulesDetectorParameters.DetectionRegion fromString(String string) {
+                return null;
+            }
+        });
+        detectionRegion.getSelectionModel().select(defaultParameters.getDetectionRegion());
 
         lowerHue.setText(String.valueOf(defaultParameters.getLowerBound().hue()));
         lowerSaturation.setText(String.valueOf(defaultParameters.getLowerBound().saturation()));
@@ -197,6 +258,27 @@ public class DetectFatGlobulesWindow extends Stage {
         tileHeight.setTextFormatter(new TextFormatter<>(getIntegerBetweenBoundsFilter(Integer.MAX_VALUE)));
         padding.setTextFormatter(new TextFormatter<>(getIntegerBetweenBoundsFilter(Integer.MAX_VALUE)));
         boundaryThreshold.setTextFormatter(new TextFormatter<>(unsignedFloatFilter));
+
+        tissueDetectionParameters.visibleProperty().bind(
+                detectionRegion.getSelectionModel().selectedItemProperty().isEqualTo(FatGlobulesDetectorParameters.DetectionRegion.DETECTED_TISSUE)
+        );
+        tissueDetectionParameters.managedProperty().bind(tissueDetectionParameters.visibleProperty());
+        lowerHueTissue.setText(String.valueOf(defaultParameters.getTissueDetectorParameters().getLowerBound().hue()));
+        lowerSaturationTissue.setText(String.valueOf(defaultParameters.getTissueDetectorParameters().getLowerBound().saturation()));
+        lowerValueTissue.setText(String.valueOf(defaultParameters.getTissueDetectorParameters().getLowerBound().value()));
+        upperHueTissue.setText(String.valueOf(defaultParameters.getTissueDetectorParameters().getUpperBound().hue()));
+        upperSaturationTissue.setText(String.valueOf(defaultParameters.getTissueDetectorParameters().getUpperBound().saturation()));
+        upperValueTissue.setText(String.valueOf(defaultParameters.getTissueDetectorParameters().getUpperBound().value()));
+        lowerHueTissue.setTextFormatter(new TextFormatter<>(getIntegerBetweenBoundsFilter(180)));
+        lowerSaturationTissue.setTextFormatter(new TextFormatter<>(getIntegerBetweenBoundsFilter(255)));
+        lowerValueTissue.setTextFormatter(new TextFormatter<>(getIntegerBetweenBoundsFilter(255)));
+        upperHueTissue.setTextFormatter(new TextFormatter<>(getIntegerBetweenBoundsFilter(180)));
+        upperSaturationTissue.setTextFormatter(new TextFormatter<>(getIntegerBetweenBoundsFilter(255)));
+        upperValueTissue.setTextFormatter(new TextFormatter<>(getIntegerBetweenBoundsFilter(255)));
+        downsample.setText(String.valueOf(defaultParameters.getTissueDetectorParameters().getDownsample()));
+        minTissueArea.setText(String.valueOf(defaultParameters.getTissueDetectorParameters().getMinTissueArea()));
+        downsample.setTextFormatter(new TextFormatter<>(unsignedFloatFilter));
+        minTissueArea.setTextFormatter(new TextFormatter<>(unsignedFloatFilter));
 
         if (owner != null) {
             initOwner(owner);
