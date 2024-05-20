@@ -26,6 +26,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * Static class containing operations on OpenCV {@link Mat}.
+ */
 class MatOperations {
 
     private static final Logger logger = LoggerFactory.getLogger(MatOperations.class);
